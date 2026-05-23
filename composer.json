@@ -1,0 +1,29 @@
+{
+    "name": "track-any-device/core",
+    "description": "Core package for the Track Any Device platform.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.7",
+        "laravel/fortify": "^1.0",
+        "laravel/sanctum": "^4.0",
+        "stancl/tenancy": "^3.10",
+        "track-any-device/sms-gateway": "*@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "TrackAnyDevice\\Core\\": "src/",
+            "TrackAnyDevice\\Core\\Database\\Factories\\": "database/factories/",
+            "TrackAnyDevice\\Core\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "TrackAnyDevice\\Core\\CoreServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}
