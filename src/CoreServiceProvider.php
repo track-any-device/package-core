@@ -31,10 +31,6 @@ class CoreServiceProvider extends ServiceProvider
                 PruneExpiredOtps::class,
                 RunScheduledWorkflowsCommand::class,
             ]);
-
-            $this->publishes([
-                __DIR__.'/../resources/boost/skills' => base_path('resources/boost/skills'),
-            ], 'tad-boost-skills');
         }
 
         Factory::guessFactoryNamesUsing(function (string $modelName) {
