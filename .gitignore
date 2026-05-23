@@ -1,3 +1,45 @@
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Dependencies
 /vendor/
 /node_modules/
+
+# Composer
+composer.lock
+composer.phar
+
+# PHPUnit
+.phpunit.result.cache
+.phpunit.cache/
+coverage/
+
+# PHP CS Fixer / Pint
+.php-cs-fixer.cache
+.php_cs.cache
+
+# PHPStan / Larastan
+.phpstan.cache/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+/storage/logs/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
