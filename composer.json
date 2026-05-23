@@ -23,6 +23,9 @@
             "providers": [
                 "TrackAnyDevice\\Core\\CoreServiceProvider"
             ]
+        },
+        "boost": {
+            "skills": "resources/boost/skills"
         }
     },
     "minimum-stability": "stable"
