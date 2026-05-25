@@ -65,13 +65,17 @@ class TenantSeeder extends Seeder
         }
 
         // ── 4. Log OAuth client credentials ─────────────────────────────────
-        $client = DB::table('oauth_clients')->where('tenant_id', $tenant->id)->first();
-        if ($client) {
-            $this->command->info("Tenant OAuth client: {$client->client_id}");
-            $uris = json_decode($client->redirect_uris ?? '[]', true);
-            $this->command->line("  Redirect URI: " . ($uris[0] ?? 'none'));
-        } else {
-            $this->command->warn('No OAuth client found — TenantObserver may not have fired.');
+        // oauth_clients lives in server-sso; the table may not exist when
+        // running migrations/seeds against package-core alone.
+        if (\Illuminate\Support\Facades\Schema::hasTable('oauth_clients')) {
+            $client = DB::table('oauth_clients')->where('tenant_id', $tenant->id)->first();
+            if ($client) {
+                $this->command->info("Tenant OAuth client: {$client->client_id}");
+                $uris = json_decode($client->redirect_uris ?? '[]', true);
+                $this->command->line("  Redirect URI: " . ($uris[0] ?? 'none'));
+            } else {
+                $this->command->warn('No OAuth client found — TenantObserver may not have fired.');
+            }
         }
 
         $this->command->info("Tenant seeded: {$tenant->name} (slug: {$tenant->slug})");
