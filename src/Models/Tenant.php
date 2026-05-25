@@ -53,6 +53,14 @@ class Tenant extends BaseTenant
             'google_maps_api_key',
             'status',
             'registration_enabled',
+            'auth_layout',
+            'auth_background_path',
+            'auth_login_title',
+            'auth_login_description',
+            'auth_register_title',
+            'auth_register_description',
+            'auth_forgot_title',
+            'auth_forgot_description',
             'approved_at',
             'metadata',
             'created_at',
@@ -72,8 +80,20 @@ class Tenant extends BaseTenant
         'google_maps_api_key',
         'status',
         'registration_enabled',
+        'auth_layout',
+        'auth_background_path',
+        'auth_login_title',
+        'auth_login_description',
+        'auth_register_title',
+        'auth_register_description',
+        'auth_forgot_title',
+        'auth_forgot_description',
         'approved_at',
         'metadata',
+    ];
+
+    protected $hidden = [
+        'auth_background_path',
     ];
 
     public const INTERFACE_DEFAULT = 'default';
@@ -108,6 +128,13 @@ class Tenant extends BaseTenant
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::url($this->logo_path) : null;
+    }
+
+    public function authBackgroundUrl(): ?string
+    {
+        return $this->auth_background_path
+            ? Storage::url($this->auth_background_path)
+            : null;
     }
 
     /**
