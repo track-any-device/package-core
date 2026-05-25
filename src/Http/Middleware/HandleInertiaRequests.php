@@ -165,6 +165,15 @@ class HandleInertiaRequests extends Middleware
      *   app_name: string,
      *   logo_url: ?string,
      *   primary_color: ?string,
+     *   auth_layout: string,
+     *   auth_background_url: ?string,
+     *   auth_login_title: ?string,
+     *   auth_login_description: ?string,
+     *   registration_enabled: bool,
+     *   auth_register_title: ?string,
+     *   auth_register_description: ?string,
+     *   auth_forgot_title: ?string,
+     *   auth_forgot_description: ?string,
      * }|null
      */
     private function resolveClientContext(Request $request): ?array
@@ -188,10 +197,19 @@ class HandleInertiaRequests extends Middleware
         $tenant = $client->tenant;
 
         return [
-            'name' => $tenant->name,
-            'app_name' => $tenant->app_name ?? config('app.name'),
-            'logo_url' => $tenant->logoUrl(),
-            'primary_color' => $tenant->primary_color,
+            'name'                      => $tenant->name,
+            'app_name'                  => $tenant->app_name ?? config('app.name'),
+            'logo_url'                  => $tenant->logoUrl(),
+            'primary_color'             => $tenant->primary_color,
+            'auth_layout'               => $tenant->auth_layout ?? 'split',
+            'auth_background_url'       => $tenant->authBackgroundUrl(),
+            'auth_login_title'          => $tenant->auth_login_title,
+            'auth_login_description'    => $tenant->auth_login_description,
+            'registration_enabled'      => (bool) $tenant->registration_enabled,
+            'auth_register_title'       => $tenant->auth_register_title,
+            'auth_register_description' => $tenant->auth_register_description,
+            'auth_forgot_title'         => $tenant->auth_forgot_title,
+            'auth_forgot_description'   => $tenant->auth_forgot_description,
         ];
     }
 }
