@@ -14,6 +14,8 @@ enum SignalEventType: string
     case Alarm = 'alarm';
     case CommandAck = 'command_ack';
     case ConfigReport = 'config_report';
+    case LowBattery = 'low_battery';
+    case GeofenceExit = 'geofence_exit';
     case Custom = 'custom';
 
     public function label(): string
@@ -29,6 +31,8 @@ enum SignalEventType: string
             self::Alarm => 'Alarm',
             self::CommandAck => 'Command Ack',
             self::ConfigReport => 'Config Report',
+            self::LowBattery => 'Low Battery',
+            self::GeofenceExit => 'Geofence Exit',
             self::Custom => 'Custom',
         };
     }
@@ -36,7 +40,7 @@ enum SignalEventType: string
     public function color(): string
     {
         return match ($this) {
-            self::Sos, self::Alarm => 'danger',
+            self::Sos, self::Alarm, self::LowBattery, self::GeofenceExit => 'danger',
             self::PunchIn, self::PunchOut => 'success',
             self::Heartbeat, self::Update => 'gray',
             self::Intercom, self::Registration => 'info',

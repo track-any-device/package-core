@@ -4,33 +4,39 @@ declare(strict_types=1);
 
 namespace TrackAnyDevice\Core\Events;
 
-use TrackAnyDevice\Drivers\ValueObjects\SignalObject;
-use TrackAnyDevice\Core\Models\Device;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use TrackAnyDevice\Drivers\ValueObjects\SignalObject;
 
-/**
- * Fired right after a signal is persisted to InfluxDB and the device
- * snapshot is updated. Broadcast on the device's per-id channel so
- * map listeners get a real-time push.
- */
-class SignalCreatedEvent implements ShouldBroadcastNow
+class SignalCreatedEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
         public readonly int $deviceId,
+        public readonly ?string $imei,
+        public readonly ?int $tenantId,
+        public readonly ?int $userId,
         public readonly SignalObject $signal,
     ) {}
 
+    /**
+     * @return array<int, PrivateChannel>
+     */
     public function broadcastOn(): array
     {
-        return [
-            new Channel("device.{$this->deviceId}"),
-        ];
+        if ($this->tenantId !== null) {
+            return [new PrivateChannel('tenant.'.$this->tenantId.'.locations')];
+        }
+
+        if ($this->userId !== null) {
+            return [new PrivateChannel('user.'.$this->userId.'.devices')];
+        }
+
+        return [];
     }
 
     public function broadcastAs(): string
@@ -38,15 +44,16 @@ class SignalCreatedEvent implements ShouldBroadcastNow
         return 'signal.created';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function broadcastWith(): array
     {
-        $device = Device::find($this->deviceId);
-
         return [
             'device_id' => $this->deviceId,
-            'imei' => $device?->imei,
-            'tenant_id' => $device?->tenant_id,
-            'user_id' => $device?->user_id,
+            'imei' => $this->imei,
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->userId,
             'signal' => $this->signal->toArray(),
         ];
     }

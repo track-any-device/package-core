@@ -4,27 +4,14 @@ declare(strict_types=1);
 
 namespace TrackAnyDevice\Core\Events;
 
-use TrackAnyDevice\Core\Enums\DeviceLogDirection;
-use TrackAnyDevice\Core\Enums\DeviceLogSource;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use TrackAnyDevice\Core\Enums\DeviceLogDirection;
+use TrackAnyDevice\Core\Enums\DeviceLogSource;
 
-/**
- * Runtime device-connection log entry — broadcast only, never persisted.
- *
- * Drives the admin and tenant log viewers without storing anything in
- * the database. Each emission fires over Soketi to:
- *
- *   - `private-admin.device-logs`            (admins see all traffic)
- *   - `private-tenant.{id}.device-logs`      (tenant operators see their own)
- *
- * The payload is intentionally generous — full message bodies, parsed
- * envelopes, command parameters — so an engineer integrating a new
- * device can debug at the wire level without enabling extra log files.
- */
 class DeviceLogEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
@@ -41,6 +28,7 @@ class DeviceLogEvent implements ShouldBroadcastNow
         public readonly ?string $imei = null,
         public readonly ?int $tenantId = null,
         public readonly string $level = 'info',
+        public readonly bool $includeAdminChannel = true,
     ) {
         $this->ts = now()->toIso8601ZuluString();
     }
@@ -55,7 +43,11 @@ class DeviceLogEvent implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
-        $channels = [new PrivateChannel('admin.device-logs')];
+        $channels = [];
+
+        if ($this->includeAdminChannel) {
+            $channels[] = new PrivateChannel('admin.device-logs');
+        }
 
         if ($this->tenantId !== null) {
             $channels[] = new PrivateChannel('tenant.'.$this->tenantId.'.device-logs');
@@ -65,10 +57,6 @@ class DeviceLogEvent implements ShouldBroadcastNow
     }
 
     /**
-     * Payload sent to subscribers. Phone-like keys are scrubbed before
-     * broadcast — admins and tenants see device_id + imei but never
-     * SIM / GSM numbers (per CLAUDE.md privacy rules).
-     *
      * @return array<string, mixed>
      */
     public function broadcastWith(): array
@@ -87,11 +75,6 @@ class DeviceLogEvent implements ShouldBroadcastNow
     }
 
     /**
-     * Strip phone-number / SIM / GSM / secret keys from the payload so
-     * the broadcast respects the same privacy guarantees as the public
-     * Tenant API. Admins willing to inspect the raw values can still
-     * read the underlying SMS row via Filament.
-     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
