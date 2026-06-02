@@ -23,6 +23,7 @@ class DeviceType extends Model
         'driver_id',
         'description',
         'image',
+        'map_icon',
         'images',
         'manual_url',
         'protocol_url',

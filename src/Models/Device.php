@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'firmware_version',
     'password',
     'name',
+    'map_icon',
     'status',
     'onboarding_status',
     'is_approved',
@@ -133,6 +134,12 @@ class Device extends Model
         }
 
         return $this->deviceType?->sensors->pluck('slug')->all() ?? [];
+    }
+
+    /** Resolved map icon — per-device override or device type's map_icon. */
+    public function effectiveMapIcon(): ?string
+    {
+        return $this->map_icon ?? $this->deviceType?->map_icon;
     }
 
     /** Resolved driver class — per-device override or device type's driver. */
