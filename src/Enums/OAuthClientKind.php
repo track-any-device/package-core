@@ -33,6 +33,13 @@ enum OAuthClientKind: string
      */
     case Tenant = 'tenant';
 
+    /**
+     * The React Native mobile app (TAD101).
+     * Public client — uses PKCE, no client secret.
+     * Singleton — provisioned from MOBILE_CLIENT_ID.
+     */
+    case Mobile = 'mobile';
+
     public function label(): string
     {
         return match ($this) {
@@ -41,6 +48,7 @@ enum OAuthClientKind: string
             self::Admin  => 'Admin panel',
             self::GraphQl => 'GraphQL Explorer',
             self::Tenant => 'Tenant',
+            self::Mobile => 'Mobile app (TAD101)',
         };
     }
 }
