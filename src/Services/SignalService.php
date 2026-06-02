@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace TrackAnyDevice\Core\Services;
 
-use TrackAnyDevice\Drivers\ValueObjects\SignalObject;
-use TrackAnyDevice\Core\Enums\DeviceStatus;
-use TrackAnyDevice\Core\Enums\OnboardingStatus;
-use TrackAnyDevice\Core\Enums\SignalEventType;
-use TrackAnyDevice\Core\Events\SignalCreatedEvent;
-use TrackAnyDevice\Core\Models\Device;
-use TrackAnyDevice\Core\Models\Signal;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
@@ -20,49 +13,58 @@ use InfluxDB2\Model\WritePrecision;
 use InfluxDB2\Point;
 use InfluxDB2\QueryApi;
 use InfluxDB2\WriteApi;
+use TrackAnyDevice\Core\Enums\DeviceStatus;
+use TrackAnyDevice\Core\Enums\OnboardingStatus;
+use TrackAnyDevice\Core\Enums\SignalEventType;
+use TrackAnyDevice\Core\Events\SignalCreatedEvent;
+use TrackAnyDevice\Core\Models\Device;
+use TrackAnyDevice\Core\Models\Signal;
+use TrackAnyDevice\Drivers\ValueObjects\SignalObject;
 
-/**
- * Canonical store for device telemetry. Writes signals as InfluxDB points
- * (measurement = "signal") and updates the device's snapshot columns in
- * the central MySQL row so the live map / Filament list have a fast path.
- *
- * Signals are stored in UTC at second precision. All inputs are normalised
- * to UTC before write; all outputs from queryHistory()/latestForDevice()
- * are CarbonImmutable in UTC.
- */
 class SignalService
 {
     private ?Client $client = null;
 
     public const MEASUREMENT = 'signal';
 
-    /**
-     * Persist a SignalObject for the given device.
-     *
-     * - Writes the InfluxDB point.
-     * - Updates the device's snapshot columns (last_signal_at, last_seen_at,
-     *   last_lat/lon, battery_level, firmware_version on registration).
-     * - Dispatches SignalCreatedEvent so observers/broadcasts can react.
-     *
-     * Returns the persisted Signal projection (useful for tests + API).
-     */
+    public function __construct(
+        private readonly SignalBroadcastBuffer $buffer = new SignalBroadcastBuffer,
+    ) {}
+
     public function record(SignalObject $signal, Device $device): Signal
     {
         $now = CarbonImmutable::now('UTC');
         $signal = $signal->withServerTime($signal->serverTime ?? $now);
 
         $this->writePoint($signal, $device);
-
         $this->updateDeviceSnapshot($signal, $device);
 
-        event(new SignalCreatedEvent($device->id, $signal));
+        if ($this->isCritical($signal)) {
+            event(new SignalCreatedEvent(
+                deviceId: $device->id,
+                imei: $device->imei,
+                tenantId: $device->tenant_id,
+                userId: $device->user_id,
+                signal: $signal,
+            ));
+        } else {
+            $this->buffer->push($device, $signal);
+        }
 
         return Signal::fromSignalObject($signal, $device->id, $device->imei);
     }
 
+    private function isCritical(SignalObject $signal): bool
+    {
+        return match ($signal->eventType) {
+            SignalEventType::Sos,
+            SignalEventType::LowBattery,
+            SignalEventType::GeofenceExit => true,
+            default => false,
+        };
+    }
+
     /**
-     * Query historical signals for a device within a time range.
-     *
      * @return Collection<int, Signal>
      */
     public function queryHistory(
@@ -112,8 +114,6 @@ class SignalService
     }
 
     /**
-     * Most recent signals for a device (across all event types).
-     *
      * @return Collection<int, Signal>
      */
     public function latestForDevice(int $deviceId, int $limit = 100): Collection
@@ -126,13 +126,10 @@ class SignalService
         );
     }
 
-    /** Diagnostic helper — true when InfluxDB writes are enabled. */
     public function enabled(): bool
     {
         return (bool) config('influxdb.enabled', false);
     }
-
-    // ── Internals ────────────────────────────────────────────────────────────
 
     private function writePoint(SignalObject $signal, Device $device): void
     {
@@ -210,8 +207,6 @@ class SignalService
             'last_seen_at' => $signal->serverTime,
         ];
 
-        // Device has reported in — clear any outstanding offline-recovery backoff
-        // so the cron stops re-trying it.
         if ($device->connection_attempt_count > 0 || $device->next_connection_attempt_at !== null) {
             $updates['connection_attempt_count'] = 0;
             $updates['next_connection_attempt_at'] = null;
@@ -232,7 +227,6 @@ class SignalService
                 : $device->onboarding_status;
         }
 
-        // Reconcile coarse-grained DeviceStatus on first real signal.
         if (in_array($device->status, [DeviceStatus::Warehouse, DeviceStatus::Inventory], true)) {
             $updates['status'] = $device->reconciledStatus();
         }

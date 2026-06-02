@@ -4,37 +4,33 @@ declare(strict_types=1);
 
 namespace TrackAnyDevice\Core\Events;
 
-use TrackAnyDevice\Core\Models\Device;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use TrackAnyDevice\Core\Models\Device;
 
-/**
- * Fired when a device completes the driver's onboarding sequence
- * (all setup SMS commands queued). Broadcast on admin + tenant + user
- * channels so the UI can flip the onboarding badge.
- */
-class DeviceOnboardedEvent implements ShouldBroadcastNow
+class DeviceOnboardedEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(public readonly Device $device) {}
 
+    /**
+     * @return array<int, PrivateChannel>
+     */
     public function broadcastOn(): array
     {
-        $channels = [new Channel('admin.devices')];
+        $channels = [];
 
         if ($this->device->tenant_id) {
-            $channels[] = new Channel("tenant.{$this->device->tenant_id}.devices");
+            $channels[] = new PrivateChannel("tenant.{$this->device->tenant_id}.devices");
         }
 
         if ($this->device->user_id) {
-            $channels[] = new Channel("user.{$this->device->user_id}.devices");
+            $channels[] = new PrivateChannel("user.{$this->device->user_id}.devices");
         }
-
-        $channels[] = new Channel("device.{$this->device->id}");
 
         return $channels;
     }
@@ -44,6 +40,9 @@ class DeviceOnboardedEvent implements ShouldBroadcastNow
         return 'device.onboarded';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function broadcastWith(): array
     {
         return [
