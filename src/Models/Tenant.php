@@ -186,4 +186,14 @@ class Tenant extends BaseTenant
     {
         return $this->hasOne('TrackAnyDevice\SsoServer\Models\OAuthClient');
     }
+
+    /**
+     * Machine API keys that authorise server-tenant portal instances to call
+     * the central app/ REST API on behalf of this tenant.
+     * A tenant can hold multiple keys for rotation without downtime.
+     */
+    public function apiKeys(): HasMany
+    {
+        return $this->hasMany(TenantApiKey::class);
+    }
 }

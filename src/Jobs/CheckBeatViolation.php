@@ -4,6 +4,7 @@ namespace TrackAnyDevice\Core\Jobs;
 
 use TrackAnyDevice\Core\Enums\AlertRuleEventType;
 use TrackAnyDevice\Core\Enums\BeatAssignmentStatus;
+use TrackAnyDevice\Core\Enums\BeatZoneType;
 use TrackAnyDevice\Core\Enums\IncidentPriority;
 use TrackAnyDevice\Core\Enums\IncidentStatus;
 use TrackAnyDevice\Core\Models\Beat;
@@ -60,16 +61,78 @@ class CheckBeatViolation implements ShouldQueue
         }
 
         $assignedBeat = $beatAssignment->beat;
+
+        $isInside = $geoFence->isInsideBeat($assignedBeat, $this->latitude, $this->longitude);
+
+        // Branch on zone type — the violation semantics are inverted.
+        if (($assignedBeat->zone_type ?? BeatZoneType::Inclusion) === BeatZoneType::Exclusion) {
+            $this->handleExclusionBeat($device, $assignedBeat, $isInside);
+
+            return;
+        }
+
+        $this->handleInclusionBeat($device, $assignedBeat, $isInside, $geoFence);
+    }
+
+    // ── Exclusion zone ────────────────────────────────────────────────────────
+
+    /**
+     * Exclusion zone: device must stay OUTSIDE.
+     * Incident opens when it enters, auto-resolves when it exits.
+     * No chain escalation — the zone boundary is the single threshold.
+     */
+    private function handleExclusionBeat(Device $device, Beat $beat, bool $isInside): void
+    {
+        $existing = $this->openViolation($device->id);
+
+        if (! $isInside) {
+            if ($existing !== null) {
+                $existing->update([
+                    'status'           => IncidentStatus::Resolved,
+                    'resolved_at'      => now(),
+                    'resolution_notes' => 'Auto-resolved: device exited the exclusion zone.',
+                ]);
+            }
+
+            return;
+        }
+
+        if ($existing === null) {
+            $this->createOrReopenViolation(
+                device: $device,
+                assignedBeat: $beat,
+                outermostViolated: $beat,
+                level: 1,
+            );
+
+            return;
+        }
+
+        $existing->update([
+            'latitude'  => $this->latitude,
+            'longitude' => $this->longitude,
+        ]);
+    }
+
+    // ── Inclusion zone ────────────────────────────────────────────────────────
+
+    /**
+     * Inclusion zone: device must stay INSIDE.
+     * Supports multi-level escalation by walking the parent-beat chain.
+     */
+    private function handleInclusionBeat(Device $device, Beat $assignedBeat, bool $isInsideAssigned, GeoFence $geoFence): void
+    {
         $chain = collect([$assignedBeat])->merge($assignedBeat->ancestors());
 
-        // Find the first beat in the chain that contains the point; the
-        // device is "inside" everything from there upward. Level = the
-        // count of beats it is OUTSIDE relative to the chain (0 = inside
-        // assigned beat; chain count = outside every beat).
+        // Level = count of beats in the chain the device sits OUTSIDE.
         $level = 0;
         $outermostViolated = null;
 
         foreach ($chain as $beat) {
+            if ($isInsideAssigned && $beat->id === $assignedBeat->id) {
+                // Already confirmed inside the assigned beat — skip the check.
+                break;
+            }
             if ($geoFence->isInsideBeat($beat, $this->latitude, $this->longitude)) {
                 break;
             }
@@ -77,24 +140,13 @@ class CheckBeatViolation implements ShouldQueue
             $outermostViolated = $beat;
         }
 
-        $existingViolation = Incident::query()
-            ->where('device_id', $this->deviceId)
-            ->where('event_type', AlertRuleEventType::BeatViolation->value)
-            ->whereIn('status', [
-                IncidentStatus::Open->value,
-                IncidentStatus::Acknowledged->value,
-                IncidentStatus::Escalated->value,
-            ])
-            ->latest()
-            ->first();
+        $existing = $this->openViolation($device->id);
 
         if ($level === 0) {
-            // Device is inside its assigned beat — auto-resolve any
-            // open violation.
-            if ($existingViolation !== null) {
-                $existingViolation->update([
-                    'status' => IncidentStatus::Resolved,
-                    'resolved_at' => now(),
+            if ($existing !== null) {
+                $existing->update([
+                    'status'           => IncidentStatus::Resolved,
+                    'resolved_at'      => now(),
                     'resolution_notes' => 'Auto-resolved: device re-entered assigned beat.',
                 ]);
             }
@@ -102,8 +154,7 @@ class CheckBeatViolation implements ShouldQueue
             return;
         }
 
-        // Device is outside at least one beat in the chain.
-        if ($existingViolation === null) {
+        if ($existing === null) {
             $this->createOrReopenViolation(
                 device: $device,
                 assignedBeat: $assignedBeat,
@@ -114,29 +165,37 @@ class CheckBeatViolation implements ShouldQueue
             return;
         }
 
-        // An incident already exists — update its level + beat context
-        // when the device has moved outward (or inward but still violating).
-        $changes = [];
+        $changes = ['latitude' => $this->latitude, 'longitude' => $this->longitude];
 
-        if ($existingViolation->level !== $level) {
+        if ($existing->level !== $level) {
             $changes['level'] = $level;
         }
 
-        if ($outermostViolated && $existingViolation->beat_id !== $outermostViolated->id) {
+        if ($outermostViolated && $existing->beat_id !== $outermostViolated->id) {
             $changes['beat_id'] = $outermostViolated->id;
         }
 
-        // Update lat/lng + bump the in-flight status to Escalated if the
-        // device crossed further out than before.
-        $changes['latitude'] = $this->latitude;
-        $changes['longitude'] = $this->longitude;
-
-        if ($level > ($existingViolation->level ?? 0)
-            && $existingViolation->status === IncidentStatus::Open) {
+        if ($level > ($existing->level ?? 0) && $existing->status === IncidentStatus::Open) {
             $changes['status'] = IncidentStatus::Escalated;
         }
 
-        $existingViolation->update($changes);
+        $existing->update($changes);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function openViolation(int $deviceId): ?Incident
+    {
+        return Incident::query()
+            ->where('device_id', $deviceId)
+            ->where('event_type', AlertRuleEventType::BeatViolation->value)
+            ->whereIn('status', [
+                IncidentStatus::Open->value,
+                IncidentStatus::Acknowledged->value,
+                IncidentStatus::Escalated->value,
+            ])
+            ->latest()
+            ->first();
     }
 
     private function createOrReopenViolation(

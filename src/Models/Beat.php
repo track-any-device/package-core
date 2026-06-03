@@ -5,6 +5,7 @@ namespace TrackAnyDevice\Core\Models;
 use TrackAnyDevice\Core\Concerns\BelongsToTenant;
 use TrackAnyDevice\Core\Concerns\UsesCentralConnection;
 use TrackAnyDevice\Core\Enums\BeatStatus;
+use TrackAnyDevice\Core\Enums\BeatZoneType;
 use TrackAnyDevice\Core\Enums\GeoFenceType;
 use TrackAnyDevice\Core\Database\Factories\BeatFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
-#[Fillable(['tenant_id', 'user_id', 'parent_id', 'name', 'description', 'geo_fence_type', 'coordinates', 'beat_template_id', 'supervisor_id', 'status'])]
+#[Fillable(['tenant_id', 'user_id', 'parent_id', 'name', 'description', 'geo_fence_type', 'zone_type', 'coordinates', 'beat_template_id', 'supervisor_id', 'status'])]
 class Beat extends Model
 {
     /** @use HasFactory<BeatFactory> */
@@ -25,8 +26,9 @@ class Beat extends Model
     {
         return [
             'geo_fence_type' => GeoFenceType::class,
-            'status' => BeatStatus::class,
-            'coordinates' => 'array',
+            'zone_type'      => BeatZoneType::class,
+            'status'         => BeatStatus::class,
+            'coordinates'    => 'array',
         ];
     }
 

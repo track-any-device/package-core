@@ -10,6 +10,8 @@ use TrackAnyDevice\Core\Console\Commands\NormalizeBeatsToPolygon;
 use TrackAnyDevice\Core\Console\Commands\PollSmsInbox;
 use TrackAnyDevice\Core\Console\Commands\PruneExpiredOtps;
 use TrackAnyDevice\Core\Console\Commands\RunScheduledWorkflowsCommand;
+use TrackAnyDevice\Core\Models\Tenant;
+use TrackAnyDevice\Core\Observers\TenantObserver;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -22,6 +24,13 @@ class CoreServiceProvider extends ServiceProvider
     {
         if (in_array(config('app.surface', 'core'), ['core', null], true)) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        }
+
+        // Auto-generate a machine API key when a tenant is approved so the
+        // server-tenant portal can authenticate to the central app/ REST API.
+        // Skipped on the tenant surface — server-tenant has no admin context.
+        if (config('app.surface') !== 'tenant') {
+            Tenant::observe(TenantObserver::class);
         }
 
         if ($this->app->runningInConsole()) {
