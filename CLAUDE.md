@@ -61,6 +61,43 @@ Only begin once the approach is confirmed. Never start on an ambiguous requireme
 
 ---
 
+## `TenantApiKey` — machine auth for server-tenant
+
+Every `server-tenant` instance (hosted or on-premise) authenticates to the central `app/`
+API with a **tenant API key**. This model lives here because the key is a central platform
+concept, not a portal concept.
+
+**Model:** `TrackAnyDevice\Core\Models\TenantApiKey`
+**Table:** `tenant_api_keys`
+
+```php
+Schema::create('tenant_api_keys', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+    $table->string('key_hash');          // bcrypt hash — never store plain
+    $table->string('name')->default('Default'); // label for Filament display
+    $table->timestamp('last_used_at')->nullable();
+    $table->timestamps();
+});
+```
+
+**Generation:** A key is created automatically when a tenant is approved in Filament
+(`TenantObserver::approved()` or a Filament action). The plain key is shown once via
+a Filament notification. After that only the hash exists.
+
+**Validation:** `ValidateTenantApiKey` middleware (in `app/`) does:
+```php
+TenantApiKey::where('tenant_id', ...)->get()
+  ->first(fn($k) => Hash::check($rawKey, $k->key_hash));
+```
+
+**Rules:**
+- One tenant can have multiple keys (rotation without downtime)
+- Revoked by deleting the `TenantApiKey` record in Filament
+- `last_used_at` updated on every validated request (throttled — max once per minute)
+
+---
+
 ## Rule 2 — Breaking changes require a major or minor version bump
 
 This package is consumed by all server apps with tight version constraints (e.g. `^0.3.0`).
