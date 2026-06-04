@@ -18,9 +18,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->string('color_scheme', 32)
-                ->default('default')
-                ->after('primary_color');
+            if (! Schema::hasColumn('tenants', 'color_scheme')) {
+                $table->string('color_scheme', 32)
+                    ->default('default')
+                    ->after('primary_color');
+            }
         });
     }
 
