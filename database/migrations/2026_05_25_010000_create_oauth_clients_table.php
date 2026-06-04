@@ -33,7 +33,8 @@ return new class extends Migration
             // bcrypt() of the plain secret. The plain value is shown once at
             // creation (Filament UI / seeder output / env) and then discarded
             // server-side. Same model as Stripe / GitHub app secrets.
-            $table->string('client_secret_hash');
+            // NULL for public PKCE clients (e.g. mobile) — no secret by design.
+            $table->string('client_secret_hash')->nullable();
 
             // Whitelist of exact redirect URIs the client may use as the
             // OAuth2 redirect_uri parameter. Tenants are auto-populated with
