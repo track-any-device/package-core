@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
-#[Fillable(['tenant_id', 'user_id', 'parent_id', 'name', 'description', 'geo_fence_type', 'zone_type', 'coordinates', 'beat_template_id', 'supervisor_id', 'status'])]
+#[Fillable(['tenant_id', 'user_id', 'parent_id', 'name', 'description', 'geo_fence_type', 'zone_type', 'color', 'coordinates', 'beat_template_id', 'supervisor_id', 'status'])]
 class Beat extends Model
 {
     /** @use HasFactory<BeatFactory> */
