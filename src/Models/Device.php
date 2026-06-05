@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'sim_number',
     'gsm_number',
     'gsm_network_id',
+    'warehouse_id',
     'iccid',
     'firmware_version',
     'password',
@@ -93,6 +94,16 @@ class Device extends Model
     public function gsmNetwork(): BelongsTo
     {
         return $this->belongsTo(GsmNetwork::class);
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function warehouseLogs(): HasMany
+    {
+        return $this->hasMany(WarehouseLog::class);
     }
 
     public function commands(): HasMany
