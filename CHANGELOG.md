@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Shop checkout flow: `device_orders` extended with `product_id`, `claim_code`, `shipping_name`, `shipping_phone`, `shipping_address` (json), `billing_address` (json), `payment_method`, `total_amount`, `currency` columns.
+- `PaymentMethod` enum (`CashOnDelivery`).
+- `Product.max_order_quantity` column — per-product direct checkout limit.
+- `DeviceOrder::generateClaimCode()` — unique 8-char alphanumeric claim code.
+- `DeviceOrder::product()` relationship.
+- `DeviceOrder::isDelivered()`, `DeviceOrder::isCancelled()`, `DeviceOrder::referenceNumber()` helpers.
+
+### Changed
+
+- `device_orders.tenant_id` and `device_orders.device_type_id` are now nullable (direct shop purchases may not have a tenant or device type).
+
 ## [0.1.0] - 2026-06-02
 
 ### Breaking Changes
