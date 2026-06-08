@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
             PolicyVersionSeeder::class,
             WorkflowSeeder::class,
             TenantSeeder::class,
-            WarehouseSeeder::class
+            WarehouseSeeder::class,
         ]);
     }
 }
