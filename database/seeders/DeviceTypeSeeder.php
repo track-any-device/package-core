@@ -60,21 +60,42 @@ class DeviceTypeSeeder extends Seeder
         // All four share the Tad101Driver and connect over Soketi. Each one
         // gets its own slug so the UI can show a tailored onboarding guide
         // (Android SDK, iOS Swift Package, Arduino sketch, RPi Python).
-        $tad101Types = [
+        // Mobile app device types use JT808 TCP (react-native-tcp-socket).
+        // The app auto-registers on login; IMEI is 09 + zero-padded user ID.
+        // P901Driver parses standard JT808 0x0200 location frames.
+        // onboarding_status is set to `verified` on creation so no SMS is sent.
+        $mobileTypes = [
             [
                 'slug' => 'android_app',
                 'name' => 'Android App',
-                'description' => 'Android devices running a TAD101-compatible app. Pusher Android SDK over WebSocket. Full sensor access (GPS, battery, GSM signal, accelerometer). See /docs/tad101/android.',
-                'communication_mode' => 'stream',
-                'category' => 'mobile',
+                'description' => 'Android mobile devices running the TAD app. JT808 TCP location streaming (react-native-tcp-socket). GPS, speed, direction, battery from device sensors.',
             ],
             [
                 'slug' => 'ios_app',
                 'name' => 'iOS App',
-                'description' => 'iOS devices using the Pusher Swift SDK. CoreLocation + battery + cellular metrics. See /docs/tad101/ios.',
-                'communication_mode' => 'stream',
-                'category' => 'mobile',
+                'description' => 'iOS mobile devices running the TAD app. JT808 TCP location streaming (react-native-tcp-socket). CoreLocation GPS, speed, direction, battery.',
             ],
+        ];
+
+        foreach ($mobileTypes as $type) {
+            DeviceType::updateOrCreate(
+                ['slug' => $type['slug']],
+                [
+                    'name'         => $type['name'],
+                    'driver_class' => 'App\\Drivers\\P901Driver',
+                    'stream_channel' => 'jt808',
+                    'description'  => $type['description'],
+                    'is_active'    => true,
+                    'configuration_schema' => [
+                        'communication_mode' => 'stream',
+                        'category'           => 'mobile',
+                        'protocol'           => 'JT808',
+                    ],
+                ]
+            );
+        }
+
+        $tad101Types = [
             [
                 'slug' => 'arduino',
                 'name' => 'Arduino',
