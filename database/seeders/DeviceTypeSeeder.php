@@ -132,6 +132,116 @@ class DeviceTypeSeeder extends Seeder
             );
         }
 
+        // ── GT06 protocol device types ────────────────────────────────────────
+        // Devices that connect over the Concox/GT06 binary TCP protocol to
+        // server-gt06 (TCP :7019). Telemetry is published to the gt06:telemetry
+        // Redis Stream and consumed by package-gt06's `gt06:consume` command.
+        // driver_class is null until package-gt06 is released and assigned.
+        // DB_DEVICE_TYPE_ID=2 in server-gt06 auto-registers unknown devices
+        // under the 'concox-gt06n' type by convention (most common GT06 family).
+        $gt06Types = [
+            [
+                'slug'        => 'concox-gt06n',
+                'name'        => 'Concox GT06N',
+                'description' => 'Concox GT06N vehicle GPS tracker. GT06 binary TCP protocol (server-gt06 :7019). SOS button, built-in microphone, ACC detection, engine relay output. Common for motorcycles and light vehicles.',
+                'has_sos'     => true,
+                'has_relay'   => true,
+            ],
+            [
+                'slug'        => 'concox-gt06d',
+                'name'        => 'Concox GT06D',
+                'description' => 'Concox GT06D OBD-II vehicle tracker. GT06 binary TCP protocol (server-gt06 :7019). Reads OBD-II diagnostics, fuel data, engine fault codes. Plug-and-play car installation.',
+                'has_sos'     => false,
+                'has_relay'   => false,
+            ],
+            [
+                'slug'        => 'concox-wetrack2',
+                'name'        => 'Concox WeTrack2',
+                'description' => 'Concox WeTrack2 hardwired vehicle tracker. GT06 binary TCP protocol (server-gt06 :7019). Engine relay, ACC detection, power-cut alarm, 3-axis accelerometer, IP67 waterproof.',
+                'has_sos'     => false,
+                'has_relay'   => true,
+            ],
+            [
+                'slug'        => 'mictrack-mt600',
+                'name'        => 'Mictrack MT600',
+                'description' => 'Mictrack MT600 portable fleet GPS tracker. GT06 binary TCP protocol (server-gt06 :7019). Long battery life, IP67 waterproof, motion sensor, magnetic mount. Popular for asset and fleet tracking.',
+                'has_sos'     => true,
+                'has_relay'   => false,
+            ],
+        ];
+
+        foreach ($gt06Types as $type) {
+            DeviceType::updateOrCreate(
+                ['slug' => $type['slug']],
+                [
+                    'name'                 => $type['name'],
+                    'driver_class'         => null,
+                    'stream_channel'       => 'gt06',
+                    'description'          => $type['description'],
+                    'is_active'            => true,
+                    'configuration_schema' => [
+                        'communication_mode' => 'stream',
+                        'protocol'           => 'GT06',
+                        'server'             => 'server-gt06',
+                        'tcp_port'           => 7019,
+                        'stream_key'         => 'gt06:telemetry',
+                        'has_sos'            => $type['has_sos'],
+                        'has_relay'          => $type['has_relay'],
+                        'heartbeat_interval' => 60,
+                    ],
+                ]
+            );
+        }
+
+        // ── H02 protocol device types ─────────────────────────────────────────
+        // Devices that connect to server-h02-tcp (TCP :7020) or
+        // server-h02-udp (UDP :7021). Both transports publish to h02:telemetry
+        // with a transport=tcp|udp field. Consumed by package-h02's `h02:consume`.
+        // driver_class is null until package-h02 is released and assigned.
+        // DB_DEVICE_TYPE_ID=3 in server-h02 auto-registers unknown devices.
+        $h02Types = [
+            [
+                'slug'        => 'sinotrack-st901',
+                'name'        => 'Sinotrack ST-901',
+                'description' => 'Sinotrack ST-901 waterproof portable tracker. H02 text TCP/UDP protocol (server-h02 :7020/:7021). Built-in GSM antenna, 400 mAh backup battery, SOS button. Popular for motorcycles and covert vehicle tracking.',
+                'has_sos'     => true,
+            ],
+            [
+                'slug'        => 'sinotrack-st902',
+                'name'        => 'Sinotrack ST-902',
+                'description' => 'Sinotrack ST-902 hardwired vehicle tracker. H02 text TCP/UDP protocol (server-h02 :7020/:7021). ACC detection, engine relay, vibration alarm, power-cut alert. Standard car installation.',
+                'has_sos'     => true,
+            ],
+            [
+                'slug'        => 'sinotrack-st902w',
+                'name'        => 'Sinotrack ST-902W',
+                'description' => 'Sinotrack ST-902W vehicle tracker with WiFi positioning. H02 text TCP/UDP protocol (server-h02 :7020/:7021). GPS + WiFi hotspot scanning for improved urban and indoor location accuracy.',
+                'has_sos'     => false,
+            ],
+        ];
+
+        foreach ($h02Types as $type) {
+            DeviceType::updateOrCreate(
+                ['slug' => $type['slug']],
+                [
+                    'name'                 => $type['name'],
+                    'driver_class'         => null,
+                    'stream_channel'       => 'h02',
+                    'description'          => $type['description'],
+                    'is_active'            => true,
+                    'configuration_schema' => [
+                        'communication_mode' => 'stream',
+                        'protocol'           => 'H02',
+                        'server'             => 'server-h02',
+                        'tcp_port'           => 7020,
+                        'udp_port'           => 7021,
+                        'stream_key'         => 'h02:telemetry',
+                        'has_sos'            => $type['has_sos'],
+                    ],
+                ]
+            );
+        }
+
         // ── Store / catalog products ──────────────────────────────────────────
         // These appear on the /shop page as purchasable products.
         // No driver_class is set — these are catalogue-only entries until a
