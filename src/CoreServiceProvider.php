@@ -10,7 +10,11 @@ use TrackAnyDevice\Core\Console\Commands\NormalizeBeatsToPolygon;
 use TrackAnyDevice\Core\Console\Commands\PollSmsInbox;
 use TrackAnyDevice\Core\Console\Commands\PruneExpiredOtps;
 use TrackAnyDevice\Core\Console\Commands\RunScheduledWorkflowsCommand;
+use TrackAnyDevice\Core\Models\Device;
+use TrackAnyDevice\Core\Models\DeviceCommand;
 use TrackAnyDevice\Core\Models\Tenant;
+use TrackAnyDevice\Core\Observers\DeviceCommandObserver;
+use TrackAnyDevice\Core\Observers\DeviceObserver;
 use TrackAnyDevice\Core\Observers\TenantObserver;
 
 class CoreServiceProvider extends ServiceProvider
@@ -29,6 +33,9 @@ class CoreServiceProvider extends ServiceProvider
         // Auto-generate a machine API key when a tenant is approved so the
         // server-tenant portal can authenticate to the central app/ REST API.
         // Skipped on the tenant surface — server-tenant has no admin context.
+        Device::observe(DeviceObserver::class);
+        DeviceCommand::observe(DeviceCommandObserver::class);
+
         if (config('app.surface') !== 'tenant') {
             Tenant::observe(TenantObserver::class);
         }
