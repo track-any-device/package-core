@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'password',
     'name',
     'map_icon',
+    'image',
     'status',
     'onboarding_status',
     'is_approved',
