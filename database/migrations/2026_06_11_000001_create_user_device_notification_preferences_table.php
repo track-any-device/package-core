@@ -17,7 +17,7 @@ return new class extends Migration
             $table->timestamp('sms_disabled_until')->nullable();
             $table->timestamps();
 
-            $table->unique(['user_id', 'device_id', 'event_type']);
+            $table->unique(['user_id', 'device_id', 'event_type'], 'udnp_user_device_event_unique');
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->foreign('device_id')->references('id')->on('devices')->cascadeOnDelete();
         });
