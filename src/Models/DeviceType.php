@@ -19,6 +19,7 @@ class DeviceType extends Model
     protected $fillable = [
         'name',
         'slug',
+        'original_model',
         'driver_class',
         'driver_id',
         'description',

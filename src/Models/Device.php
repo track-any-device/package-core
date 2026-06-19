@@ -4,7 +4,6 @@ namespace TrackAnyDevice\Core\Models;
 
 use TrackAnyDevice\Core\Concerns\UsesCentralConnection;
 use TrackAnyDevice\Core\Enums\DeviceStatus;
-use TrackAnyDevice\Core\Enums\OnboardingStatus;
 use TrackAnyDevice\Core\Database\Factories\DeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,33 +16,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'tenant_id',
     'user_id',
-    'assigned_at',
     'device_type_id',
-    'driver_id',
     'imei',
-    'serial_number',
+    'broadcast_id',
     'sim_number',
     'gsm_number',
-    'gsm_network_id',
-    'warehouse_id',
-    'iccid',
-    'firmware_version',
+    'apn_settings',
     'password',
     'name',
-    'map_icon',
     'image',
     'status',
-    'onboarding_status',
-    'is_approved',
-    'is_visible_to_tenant',
     'battery_level',
     'last_lat',
     'last_lon',
     'last_seen_at',
-    'last_signal_at',
-    'last_update_requested_at',
-    'connection_attempt_count',
-    'next_connection_attempt_at',
     'metadata',
     'notes',
 ])]
@@ -56,18 +42,11 @@ class Device extends Model
     {
         return [
             'status' => DeviceStatus::class,
-            'onboarding_status' => OnboardingStatus::class,
-            'is_approved' => 'boolean',
-            'is_visible_to_tenant' => 'boolean',
+            'apn_settings' => 'array',
             'battery_level' => 'integer',
             'last_lat' => 'decimal:7',
             'last_lon' => 'decimal:7',
             'last_seen_at' => 'datetime',
-            'last_signal_at' => 'datetime',
-            'last_update_requested_at' => 'datetime',
-            'next_connection_attempt_at' => 'datetime',
-            'connection_attempt_count' => 'integer',
-            'assigned_at' => 'datetime',
             'metadata' => 'array',
         ];
     }
@@ -85,26 +64,6 @@ class Device extends Model
     public function deviceType(): BelongsTo
     {
         return $this->belongsTo(DeviceType::class);
-    }
-
-    public function driver(): BelongsTo
-    {
-        return $this->belongsTo(Driver::class);
-    }
-
-    public function gsmNetwork(): BelongsTo
-    {
-        return $this->belongsTo(GsmNetwork::class);
-    }
-
-    public function warehouse(): BelongsTo
-    {
-        return $this->belongsTo(Warehouse::class);
-    }
-
-    public function warehouseLogs(): HasMany
-    {
-        return $this->hasMany(WarehouseLog::class);
     }
 
     public function commands(): HasMany
@@ -148,35 +107,27 @@ class Device extends Model
         return $this->deviceType?->sensors->pluck('slug')->all() ?? [];
     }
 
-    /** Resolved map icon — per-device override or device type's map_icon. */
+    /** Resolved map icon — comes from the device type (per-device map_icon override was removed). */
     public function effectiveMapIcon(): ?string
     {
-        return $this->map_icon ?? $this->deviceType?->map_icon;
+        return $this->deviceType?->map_icon;
     }
 
-    /** Resolved driver class — per-device override or device type's driver. */
+    /** Resolved driver class — resolved from the device type's originalModel (no per-device driver_id). */
     public function effectiveDriverClass(): ?string
     {
-        return $this->driver?->class ?? $this->deviceType?->effectiveDriverClass();
+        return $this->deviceType?->effectiveDriverClass();
     }
 
     /**
-     * Reconcile DeviceStatus from ownership + SIM state.
-     *
-     *   No GSM + no tenant/user → warehouse
-     *   GSM + no tenant/user    → available
-     *   Has tenant or user      → assigned
+     * Reconcile DeviceStatus from ownership (slim model: active | blocked | pending).
+     * `blocked` is set explicitly by an admin and is never produced here.
      */
     public function reconciledStatus(): DeviceStatus
     {
-        $hasGsm = ! empty($this->gsm_number);
         $hasOwner = ! empty($this->tenant_id) || ! empty($this->user_id);
 
-        return match (true) {
-            $hasOwner => DeviceStatus::Assigned,
-            $hasGsm => DeviceStatus::Available,
-            default => DeviceStatus::Warehouse,
-        };
+        return $hasOwner ? DeviceStatus::Active : DeviceStatus::Pending;
     }
 
     public function isStock(): bool
