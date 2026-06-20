@@ -9,7 +9,7 @@ use Illuminate\Foundation\Queue\Queueable;
 
 /**
  * Phase 1 stub — logs the command as Queued. Phase 2 will implement actual
- * SMS dispatch via SmsGatewayInterface and mark the command Sent/Delivered.
+ * SMS dispatch via the app SMS pipeline and mark the command Sent/Delivered.
  */
 class QueueDeviceCommand implements ShouldQueue
 {

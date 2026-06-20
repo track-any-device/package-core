@@ -14,7 +14,7 @@ use TrackAnyDevice\Core\Services\SignalService;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Bridges the inbox poller (PollSmsInbox / SmsGatewayService) and the
+ * Bridges the inbox poller (app's PollSmsInbox command) and the
  * signal pipeline. Every newly-stored IncomingSms row is:
  *
  *   1. Matched to a Device by sender_number (sim_number or gsm_number).

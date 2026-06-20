@@ -8,8 +8,7 @@
         "laravel/framework": "^13.7",
         "laravel/fortify": "^1.0",
         "laravel/sanctum": "^4.0",
-        "stancl/tenancy": "^3.10",
-        "track-any-device/sms-gateway": "^1.0"
+        "stancl/tenancy": "^3.10"
     },
     "autoload": {
         "psr-4": {

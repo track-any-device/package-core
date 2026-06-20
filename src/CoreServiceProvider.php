@@ -7,7 +7,6 @@ use Illuminate\Support\ServiceProvider;
 use TrackAnyDevice\Core\Console\Commands\DetectOfflineDevices;
 use TrackAnyDevice\Core\Console\Commands\FlushSignalBroadcasts;
 use TrackAnyDevice\Core\Console\Commands\NormalizeBeatsToPolygon;
-use TrackAnyDevice\Core\Console\Commands\PollSmsInbox;
 use TrackAnyDevice\Core\Console\Commands\PruneExpiredOtps;
 use TrackAnyDevice\Core\Console\Commands\RunScheduledWorkflowsCommand;
 use TrackAnyDevice\Core\Models\Device;
@@ -45,7 +44,6 @@ class CoreServiceProvider extends ServiceProvider
                 DetectOfflineDevices::class,
                 FlushSignalBroadcasts::class,
                 NormalizeBeatsToPolygon::class,
-                PollSmsInbox::class,
                 PruneExpiredOtps::class,
                 RunScheduledWorkflowsCommand::class,
             ]);
