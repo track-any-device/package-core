@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Catalog cut: removed the obsolete component catalogue — models `Chip`, `ComputeBoard`, `Sensor`, `ConnectingCable`, `ChargingSet`, `GsmNetwork`, their tables, the five `device_type_*` build-spec pivots, and `DeviceType`'s build-spec relations. `ProductType` is now `DeviceType`-only. The sellable catalog is DeviceType (app) + Accessory/CMS (Sanity).
+
 ### Added
 
 - Shop checkout flow: `device_orders` extended with `product_id`, `claim_code`, `shipping_name`, `shipping_phone`, `shipping_address` (json), `billing_address` (json), `payment_method`, `total_amount`, `currency` columns.

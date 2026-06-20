@@ -91,22 +91,6 @@ class Device extends Model
         return $this->hasMany(DeviceOrder::class);
     }
 
-    public function sensors(): BelongsToMany
-    {
-        return $this->belongsToMany(Sensor::class)->orderBy('sort_order');
-    }
-
-    /** Returns the set of sensor slugs enabled on this device (falls back to device type defaults). */
-    public function effectiveSensorSlugs(): array
-    {
-        $direct = $this->sensors->pluck('slug')->all();
-        if (! empty($direct)) {
-            return $direct;
-        }
-
-        return $this->deviceType?->sensors->pluck('slug')->all() ?? [];
-    }
-
     /** Resolved map icon — comes from the device type (per-device map_icon override was removed). */
     public function effectiveMapIcon(): ?string
     {

@@ -40,11 +40,6 @@ class Country extends Model
         'conversion_markup_percent' => 'decimal:2',
     ];
 
-    public function gsmNetworks(): HasMany
-    {
-        return $this->hasMany(GsmNetwork::class);
-    }
-
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'mobile_country_id');
