@@ -93,33 +93,6 @@ class DeviceType extends Model
         return $this->hasMany(Device::class);
     }
 
-    public function sensors(): BelongsToMany
-    {
-        return $this->belongsToMany(Sensor::class)
-            ->withPivot('is_primary')
-            ->orderBy('sort_order');
-    }
-
-    public function chips(): BelongsToMany
-    {
-        return $this->belongsToMany(Chip::class, 'device_type_chip');
-    }
-
-    public function computeBoards(): BelongsToMany
-    {
-        return $this->belongsToMany(ComputeBoard::class, 'device_type_compute_board');
-    }
-
-    public function connectingCables(): BelongsToMany
-    {
-        return $this->belongsToMany(ConnectingCable::class, 'device_type_connecting_cable');
-    }
-
-    public function chargingSets(): BelongsToMany
-    {
-        return $this->belongsToMany(ChargingSet::class, 'device_type_charging_set');
-    }
-
     public function products(): MorphMany
     {
         return $this->morphMany(Product::class, 'productable');
