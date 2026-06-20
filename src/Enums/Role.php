@@ -3,16 +3,10 @@
 namespace TrackAnyDevice\Core\Enums;
 
 /**
- * Single-Role permission model (restructure 2026-06-19, Workstream F).
+ * Single-Role permission model (restructure 2026-06, Workstream F).
  *
- * Target roles: Admin, Core, Procurement, Workshop, DeliveryOrder, TenantUser, User.
- * Supervisor + Staff are DEPRECATED — retained only so existing code/data keep working during the
- * migration; the role+department→role data migration maps them (and the old StaffDepartments) to
- * Core, after which they can be removed. See docs/audit/RESTRUCTURE-PLAN.md.
- *
- * NOTE: additive/non-breaking on this branch — adds cases + helpers, retains old ones. Removing
- * Supervisor/Staff later is a breaking change (minor bump + changelog) once package-admin no longer
- * references StaffDepartment.
+ * Admin (Filament + delete) · Core (Filament, no delete) · Procurement / Workshop / DeliveryOrder
+ * (web operations portals) · TenantUser (owns tenants) · User (web/app "my" portal).
  */
 enum Role: string
 {
@@ -24,11 +18,6 @@ enum Role: string
     case TenantUser = 'tenant_user';       // web "my" portal — owns tenants
     case User = 'user';                    // web/app "my" portal
 
-    /** @deprecated map to Core via migration, then remove */
-    case Supervisor = 'supervisor';
-    /** @deprecated map to Core via migration, then remove */
-    case Staff = 'staff';
-
     public function label(): string
     {
         return match ($this) {
@@ -39,8 +28,6 @@ enum Role: string
             Role::DeliveryOrder => 'Delivery Order',
             Role::TenantUser => 'Tenant User',
             Role::User => 'End User',
-            Role::Supervisor => 'Supervisor (legacy)',
-            Role::Staff => 'Staff (legacy)',
         };
     }
 
@@ -85,10 +72,10 @@ enum Role: string
         return in_array($this, [Role::Procurement, Role::Workshop, Role::DeliveryOrder], true);
     }
 
-    /** Can sign in to the Filament admin (server-admin): Admin or Core (+ legacy staff during migration). */
+    /** Can sign in to the Filament admin (server-admin): Admin or Core. */
     public function canAccessFilament(): bool
     {
-        return in_array($this, [Role::Admin, Role::Core, Role::Supervisor, Role::Staff], true);
+        return $this === Role::Admin || $this === Role::Core;
     }
 
     /** Only Admin may delete in Filament; Core has full read/write but no delete. */
@@ -96,8 +83,6 @@ enum Role: string
     {
         return $this === Role::Admin;
     }
-
-    // ---- deprecated shims: keep existing callers compiling during the migration ----
 
     /** @deprecated use canAccessFilament() */
     public function isCentralStaff(): bool
@@ -109,17 +94,5 @@ enum Role: string
     public function isAllowedForFilamentAdminPanel(): bool
     {
         return $this->canAccessFilament();
-    }
-
-    /** @deprecated folds into Core */
-    public function isSupervisor(): bool
-    {
-        return $this === Role::Supervisor;
-    }
-
-    /** @deprecated folds into Core */
-    public function isStaff(): bool
-    {
-        return $this === Role::Staff;
     }
 }
