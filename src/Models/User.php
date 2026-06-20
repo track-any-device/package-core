@@ -4,7 +4,6 @@ namespace TrackAnyDevice\Core\Models;
 
 use TrackAnyDevice\Core\Concerns\UsesCentralConnection;
 use TrackAnyDevice\Core\Enums\Role;
-use TrackAnyDevice\Core\Enums\StaffDepartment;
 use TrackAnyDevice\Core\Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -68,16 +67,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === Role::Admin;
     }
 
-    public function isSupervisor(): bool
-    {
-        return $this->role === Role::Supervisor;
-    }
-
-    public function isStaff(): bool
-    {
-        return $this->role === Role::Staff;
-    }
-
     public function isTenantUser(): bool
     {
         return $this->role === Role::TenantUser;
@@ -137,52 +126,5 @@ class User extends Authenticatable implements MustVerifyEmail
     public function displayTimezone(): string
     {
         return $this->display_timezone ?: config('app.timezone_display', 'UTC');
-    }
-
-    public function staffDepartments(): BelongsToMany
-    {
-        return $this->belongsToMany(Warehouse::class, 'staff_department_user')
-            ->withPivot(['department', 'is_workshop'])
-            ->withTimestamps();
-    }
-
-    public function hasDepartment(StaffDepartment $department): bool
-    {
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        return $this->staffDepartmentEntries()
-            ->where('department', $department->value)
-            ->exists();
-    }
-
-    public function isWorkshop(): bool
-    {
-        return $this->staffDepartmentEntries()
-            ->where('department', StaffDepartment::Warehouse->value)
-            ->where('is_workshop', true)
-            ->exists();
-    }
-
-    public function staffDepartmentEntries(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(\TrackAnyDevice\Core\Models\StaffDepartmentUser::class);
-    }
-
-    public function assignedWarehouses(): BelongsToMany
-    {
-        return $this->belongsToMany(Warehouse::class, 'staff_department_user')
-            ->wherePivot('department', StaffDepartment::Warehouse->value)
-            ->withPivot(['is_workshop'])
-            ->withTimestamps();
-    }
-
-    public function getDepartmentList(): array
-    {
-        return $this->staffDepartmentEntries()
-            ->pluck('department')
-            ->map(fn (string $d) => StaffDepartment::from($d))
-            ->all();
     }
 }

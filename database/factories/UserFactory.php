@@ -30,7 +30,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => Role::Staff,
+            'role' => Role::Core,
             'primary_contact' => '+923001234567',
             'phone_verified_at' => now(),
             'remember_token' => Str::random(10),
@@ -53,14 +53,14 @@ class UserFactory extends Factory
     public function supervisor(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => Role::Supervisor,
+            'role' => Role::Core,
         ]);
     }
 
     public function staff(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => Role::Staff,
+            'role' => Role::Core,
         ]);
     }
 
