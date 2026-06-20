@@ -45,6 +45,20 @@ return new class extends Migration
         DB::table('devices')->whereIn('status', ['maintenance', 'lost', 'retired'])->update(['status' => 'blocked']);
         DB::table('devices')->whereNotIn('status', ['active', 'blocked'])->update(['status' => 'pending']);
 
+        // 2b) drop indexes on columns we're about to remove. MySQL auto-drops a column's indexes
+        //     when the column is dropped, but SQLite (and portability) need them removed explicitly.
+        Schema::table('devices', function (Blueprint $table) {
+            if (Schema::hasColumn('devices', 'serial_number') && Schema::hasIndex('devices', 'devices_serial_number_unique')) {
+                $table->dropUnique('devices_serial_number_unique');
+            }
+            if (Schema::hasColumn('devices', 'onboarding_status') && Schema::hasIndex('devices', 'devices_onboarding_status_index')) {
+                $table->dropIndex('devices_onboarding_status_index');
+            }
+            if (Schema::hasIndex('devices', 'devices_offline_detection_idx')) {
+                $table->dropIndex('devices_offline_detection_idx');
+            }
+        });
+
         // 3) drop FK columns + retired plain columns
         Schema::table('devices', function (Blueprint $table) {
             foreach (['driver_id', 'gsm_network_id', 'warehouse_id'] as $col) {
