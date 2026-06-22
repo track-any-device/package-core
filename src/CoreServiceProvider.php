@@ -4,7 +4,6 @@ namespace TrackAnyDevice\Core;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\ServiceProvider;
-use TrackAnyDevice\Core\Console\Commands\DetectOfflineDevices;
 use TrackAnyDevice\Core\Console\Commands\FlushSignalBroadcasts;
 use TrackAnyDevice\Core\Console\Commands\NormalizeBeatsToPolygon;
 use TrackAnyDevice\Core\Console\Commands\PruneExpiredOtps;
@@ -41,7 +40,6 @@ class CoreServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
-                DetectOfflineDevices::class,
                 FlushSignalBroadcasts::class,
                 NormalizeBeatsToPolygon::class,
                 PruneExpiredOtps::class,

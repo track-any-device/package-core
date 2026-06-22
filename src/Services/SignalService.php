@@ -14,7 +14,6 @@ use InfluxDB2\Point;
 use InfluxDB2\QueryApi;
 use InfluxDB2\WriteApi;
 use TrackAnyDevice\Core\Enums\DeviceStatus;
-use TrackAnyDevice\Core\Enums\OnboardingStatus;
 use TrackAnyDevice\Core\Enums\SignalEventType;
 use TrackAnyDevice\Core\Events\SignalCreatedEvent;
 use TrackAnyDevice\Core\Models\Device;
@@ -207,11 +206,6 @@ class SignalService
             'last_seen_at' => $signal->serverTime,
         ];
 
-        if ($device->connection_attempt_count > 0 || $device->next_connection_attempt_at !== null) {
-            $updates['connection_attempt_count'] = 0;
-            $updates['next_connection_attempt_at'] = null;
-        }
-
         if ($signal->batteryPercent !== null) {
             $updates['battery_level'] = $signal->batteryPercent;
         }
@@ -219,12 +213,6 @@ class SignalService
         if ($signal->hasLocation()) {
             $updates['last_lat'] = $signal->latitude;
             $updates['last_lon'] = $signal->longitude;
-        }
-
-        if ($signal->eventType === SignalEventType::Registration) {
-            $updates['onboarding_status'] = $device->onboarding_status === OnboardingStatus::Pending
-                ? OnboardingStatus::SimAdded
-                : $device->onboarding_status;
         }
 
         if (in_array($device->status, [DeviceStatus::Warehouse, DeviceStatus::Inventory], true)) {
