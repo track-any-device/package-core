@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Completed the devices-slim: removed dead references to columns dropped by `slim_devices` — `onboarding_status` (DeviceObserver, SignalService, events) and `connection_attempt_count`/`next_connection_attempt_at`/`last_update_requested_at` (SignalService). These were causing runtime `no such column` failures on device saves + signal recording. Deleted the now-obsolete OnboardDeviceJob, DeviceOnboardedEvent, OfflineDeviceRecoveryService, DetectOfflineDevices command, and the OnboardingStatus enum.
+
 ### Breaking Changes
 
 - Catalog cut: removed the obsolete component catalogue — models `Chip`, `ComputeBoard`, `Sensor`, `ConnectingCable`, `ChargingSet`, `GsmNetwork`, their tables, the five `device_type_*` build-spec pivots, and `DeviceType`'s build-spec relations. `ProductType` is now `DeviceType`-only. The sellable catalog is DeviceType (app) + Accessory/CMS (Sanity).
