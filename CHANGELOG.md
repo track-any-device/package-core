@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- Phone-OTP sign-up: made `users.email` and `users.password` **nullable** (both were `NOT NULL`). A user created from just a phone number via `/api/auth/otp/request` has neither, so the insert threw `NOT NULL constraint failed: users.email` → 500 on every first-time OTP login. Backward-compatible (relaxes constraints); existing rows unaffected. New migration `2026_06_22_000000_make_users_email_password_nullable` covers already-migrated databases.
 - Completed the devices-slim: removed dead references to columns dropped by `slim_devices` — `onboarding_status` (DeviceObserver, SignalService, events) and `connection_attempt_count`/`next_connection_attempt_at`/`last_update_requested_at` (SignalService). These were causing runtime `no such column` failures on device saves + signal recording. Deleted the now-obsolete OnboardDeviceJob, DeviceOnboardedEvent, OfflineDeviceRecoveryService, DetectOfflineDevices command, and the OnboardingStatus enum.
 
 ### Breaking Changes
