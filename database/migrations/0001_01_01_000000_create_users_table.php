@@ -13,13 +13,13 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('role')->default(Role::User->value);
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique();
             $table->string('primary_contact')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->string('public_contact')->nullable();
             $table->boolean('share_email')->default(true);
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->text('two_factor_secret')->nullable();
             $table->text('two_factor_recovery_codes')->nullable();
             $table->timestamp('two_factor_confirmed_at')->nullable();
